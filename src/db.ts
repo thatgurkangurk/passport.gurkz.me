@@ -17,11 +17,7 @@ export const users = pgTable("user", {
 });
 
 export const valibotUser = v.object({
-  username: v.string(),
   id: v.string(),
-  image: v.nullish(v.string()),
-  email: v.nullish(v.string()),
-  emailVerified: v.nullish(v.date()),
 });
 
 const schema = {

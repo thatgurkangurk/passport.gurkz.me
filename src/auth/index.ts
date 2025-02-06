@@ -41,10 +41,10 @@ async function getDiscordUser(accessToken: string) {
         email: res.email,
       })
       .returning();
-    return newUser[0];
+    return newUser[0].id;
   }
 
-  return user;
+  return user.id;
 }
 
 export default issuer({
@@ -86,9 +86,11 @@ export default issuer({
   },
   success: async (ctx, value) => {
     if (value.provider === "discord") {
-      const user = await getDiscordUser(value.tokenset.access);
+      const userId = await getDiscordUser(value.tokenset.access);
 
-      return ctx.subject("user", user);
+      return ctx.subject("user", {
+        id: userId,
+      });
     }
 
     throw new Error("unsupported provider");
