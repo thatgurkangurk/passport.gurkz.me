@@ -6,7 +6,8 @@ import { DiscordProvider } from "@openauthjs/openauth/provider/discord";
 import { Select } from "@openauthjs/openauth/ui/select";
 import { THEME_TERMINAL } from "@openauthjs/openauth/ui/theme";
 import * as v from "valibot";
-import { accounts, db, users } from "~/db";
+import { accounts, users } from "~/schema";
+import { db } from "~/db";
 import { and, eq } from "drizzle-orm";
 import { createValibotFetcher } from "~/valibot-fetcher";
 

@@ -1,10 +1,10 @@
 import { defineConfig } from "drizzle-kit";
-import { env } from "~/env";
 
 export default defineConfig({
   dialect: "postgresql",
   dbCredentials: {
-    url: env.DB_URL,
+    // biome-ignore lint/style/noNonNullAssertion: it's automatically loaded
+    url: process.env.DB_URL!,
   },
-  schema: "./src/db.ts",
+  schema: "./src/schema.ts",
 });
