@@ -6,8 +6,8 @@ import { DiscordProvider } from "@openauthjs/openauth/provider/discord";
 import { Select } from "@openauthjs/openauth/ui/select";
 import { THEME_TERMINAL } from "@openauthjs/openauth/ui/theme";
 import * as v from "valibot";
-import { db, users } from "~/db";
-import { eq } from "drizzle-orm";
+import { accounts, db, users } from "~/db";
+import { and, eq } from "drizzle-orm";
 import { createValibotFetcher } from "~/valibot-fetcher";
 
 const valiFetch = createValibotFetcher();
@@ -27,24 +27,38 @@ async function getDiscordUser(accessToken: string) {
       },
     }
   );
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, res.email),
+  const account = await db.query.accounts.findFirst({
+    where: and(
+      eq(accounts.provider, "discord"),
+      eq(accounts.providerAccountId, res.id)
+    ),
+    with: {
+      user: true,
+    },
   });
 
-  if (!user) {
-    const newUser = await db
-      .insert(users)
-      .values({
-        username: res.username,
-        image: res.avatar,
-        email: res.email,
-      })
-      .returning();
-    return newUser[0].id;
+  if (!account?.user) {
+    const newUser = await db.transaction(async (tx) => {
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          username: res.username,
+        })
+        .returning();
+
+      await tx.insert(accounts).values({
+        userId: newUser.id,
+        provider: "discord",
+        providerAccountId: res.id,
+      });
+
+      return newUser;
+    });
+
+    return newUser;
   }
 
-  return user.id;
+  return account.user;
 }
 
 export default issuer({
@@ -86,10 +100,11 @@ export default issuer({
   },
   success: async (ctx, value) => {
     if (value.provider === "discord") {
-      const userId = await getDiscordUser(value.tokenset.access);
+      const user = await getDiscordUser(value.tokenset.access);
 
       return ctx.subject("user", {
-        id: userId,
+        id: user.id,
+        username: user.username,
       });
     }
 
