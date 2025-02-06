@@ -76,6 +76,14 @@ export default issuer({
       scopes: ["identify", "email"],
     }),
   },
+  allow: async (input) => {
+    if (env.NODE_ENV === "development") return true;
+    const url = new URL(input.redirectURI);
+    const { hostname } = url;
+    if (hostname.endsWith("gurkz.me")) return true;
+    if (hostname === "localhost") return true;
+    return false;
+  },
   success: async (ctx, value) => {
     if (value.provider === "discord") {
       const user = await getDiscordUser(value.tokenset.access);
