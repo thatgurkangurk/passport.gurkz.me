@@ -1,5 +1,8 @@
+import { cors } from "hono/cors";
 import authIssuer from "~/auth/index";
 const app = authIssuer;
+
+app.use("*", cors())
 
 app.get("/", (c) => {
   return c.html(

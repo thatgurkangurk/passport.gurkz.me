@@ -6,7 +6,7 @@ import { DiscordProvider } from "@openauthjs/openauth/provider/discord";
 import { Select } from "@openauthjs/openauth/ui/select";
 import { THEME_TERMINAL } from "@openauthjs/openauth/ui/theme";
 import * as v from "valibot";
-import { accounts, users } from "~/schema";
+import { accounts, clientIds, users } from "~/schema";
 import { db } from "~/db";
 import { and, eq } from "drizzle-orm";
 import { createValibotFetcher } from "~/valibot-fetcher";
@@ -93,11 +93,20 @@ export default issuer({
   },
   allow: async (input) => {
     if (env.NODE_ENV === "development") return true;
-    const url = new URL(input.redirectURI);
-    const { hostname } = url;
-    if (hostname.endsWith("gurkz.me")) return true;
-    if (hostname === "localhost") return true;
-    return false;
+
+    const allClientIds = await db
+      .select({
+        clientId: clientIds.clientId,
+      })
+      .from(clientIds)
+      .innerJoin(users, eq(clientIds.userId, users.id))
+      .where(eq(users.isAdmin, true));
+
+    const clientIdStrings = allClientIds.map((row) => row.clientId);
+
+    if (!clientIdStrings.includes(input.clientID)) return false;
+
+    return true;
   },
   success: async (ctx, value) => {
     if (value.provider === "discord") {

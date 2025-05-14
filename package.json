@@ -8,6 +8,9 @@
     "drizzle-kit": "^0.30.6",
     "pg": "^8.15.6"
   },
+  "scripts": {
+    "dev": "bun run src/main.tsx"
+  },
   "peerDependencies": {
     "typescript": "^5.7.3"
   },

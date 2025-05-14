@@ -1,8 +1,10 @@
 import {
+  boolean,
   pgEnum,
   pgTable,
   primaryKey,
   text,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
@@ -18,6 +20,7 @@ export const users = pgTable("user", {
     .$defaultFn(() => nanoid(21))
     .primaryKey(),
   username: text().notNull().unique(),
+  isAdmin: boolean().notNull().default(false),
 });
 
 export const accounts = pgTable(
@@ -51,8 +54,24 @@ export const valibotUser = v.object({
   username: v.string(),
 });
 
+export const clientIds = pgTable("client_id", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id").defaultRandom(),
+  userId: varchar()
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+});
+
+export const clientIdRelations = relations(clientIds, ({ one }) => ({
+  user: one(users, {
+    fields: [clientIds.userId],
+    references: [users.id],
+  }),
+}));
+
 const schema = {
   users: users,
   accounts: accounts,
   accountRelations: accountRelations,
+  clientIds: clientIds,
 };
