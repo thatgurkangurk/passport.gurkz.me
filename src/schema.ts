@@ -60,6 +60,7 @@ export const clientIds = pgTable("client_id", {
   userId: varchar()
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
+  description: text("description"),
 });
 
 export const clientIdRelations = relations(clientIds, ({ one }) => ({

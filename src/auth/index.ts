@@ -8,10 +8,23 @@ import { THEME_TERMINAL } from "@openauthjs/openauth/ui/theme";
 import * as v from "valibot";
 import { accounts, clientIds, users } from "~/schema";
 import { db } from "~/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { createValibotFetcher } from "~/valibot-fetcher";
 
 const valiFetch = createValibotFetcher();
+
+const existsQuery = db
+  .select({ exists: sql<boolean>`true` })
+  .from(clientIds)
+  .innerJoin(users, eq(clientIds.userId, users.id))
+  .where(
+    and(
+      eq(users.isAdmin, true),
+      eq(clientIds.clientId, sql.placeholder("clientid"))
+    )
+  )
+  .limit(1)
+  .prepare("client_id_exists_query");
 
 async function getDiscordUser(accessToken: string) {
   const res = await valiFetch(
@@ -94,19 +107,10 @@ export default issuer({
   allow: async (input) => {
     if (env.NODE_ENV === "development") return true;
 
-    const allClientIds = await db
-      .select({
-        clientId: clientIds.clientId,
-      })
-      .from(clientIds)
-      .innerJoin(users, eq(clientIds.userId, users.id))
-      .where(eq(users.isAdmin, true));
+    const exists =
+      (await existsQuery.execute({ clientid: input.clientID })).length > 0;
 
-    const clientIdStrings = allClientIds.map((row) => row.clientId);
-
-    if (!clientIdStrings.includes(input.clientID)) return false;
-
-    return true;
+    return exists;
   },
   success: async (ctx, value) => {
     if (value.provider === "discord") {
